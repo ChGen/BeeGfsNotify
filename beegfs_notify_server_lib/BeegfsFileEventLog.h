@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <stdexcept>
 #include <string>
+#include <set>
+#include <functional>
 #include <time.h>
 #include <utime.h>
 
@@ -53,18 +55,27 @@ public:
     Success,
     ReadFailed,
     VersionMismatch,
-    InvalidSize
+    InvalidSize,
+    IgnoredPath
   };
 
-  BeegfsFileEventLog(const std::string &socketPath);
+  using PathFilterFunc = std::function<bool (std::string)>;
+
+  BeegfsFileEventLog(const std::string &socketPath, PathFilterFunc pathFilterFunc = {});
 
   std::pair<ReadErrorCode, BeegfsLogPacket> read();
+  void removeSockets();
 
   ~BeegfsFileEventLog();
 
 protected:
   int listenFD = -1;
   int serverFD = -1;
+  bool onAccept = false;
+  bool onReceive = false;
 
   std::pair<ReadErrorCode, BeegfsLogPacket> read_packet(int fd);
+private:
+
+  PathFilterFunc _pathFilterFunc;
 };

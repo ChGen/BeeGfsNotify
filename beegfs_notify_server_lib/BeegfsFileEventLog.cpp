@@ -10,6 +10,21 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+namespace BeegfsEvents {
+    const std::string FLUSH_OPERATION = "Flush";
+    const std::string TRUNCATE_OPERATION = "Truncate";
+    const std::string SET_ATTR_OPERATION = "SetAttr";
+    const std::string CLOSE_AFTER_WRITE_OPERATION = "CloseAfterWrite";
+    const std::string CREATE_OPERATION = "Create";
+    const std::string MKDIR_OPERATION = "MKdir";
+    const std::string MKNOD_OPERATION = "MKnod";
+    const std::string SYMLINK_OPERATION = "Symlink";
+    const std::string RMDIR_OPERATION = "RMdir";
+    const std::string UNLINK_OPERATION = "Unlink";
+    const std::string HARDLINK_OPERATION = "Hardlink";
+    const std::string RENAME_OPERATION = "Rename";
+}
+
 class Reader {
     Reader(const Reader&) = delete;
     Reader& operator=(const Reader&) = delete;
@@ -67,7 +82,7 @@ inline Reader &operator>>(Reader &r, BeegfsFileEventType &value) {
 }
 
 std::string to_string(const BeegfsFileEventType &fileEvent) {
-  const std::map<BeegfsFileEventType, std::string> ops = {
+  const static std::map<BeegfsFileEventType, std::string> ops = {
       {BeegfsFileEventType::FLUSH, BeegfsEvents::FLUSH_OPERATION},
       {BeegfsFileEventType::TRUNCATE, BeegfsEvents::TRUNCATE_OPERATION},
       {BeegfsFileEventType::SETATTR, BeegfsEvents::SET_ATTR_OPERATION},
@@ -90,8 +105,8 @@ std::ostream& operator<<(std::ostream& os, const BeegfsLogPacket& p)
    return os;
 }
 
-
-BeegfsFileEventLog::BeegfsFileEventLog(const std::string &socketPath) {
+BeegfsFileEventLog::BeegfsFileEventLog(const std::string &socketPath, PathFilterFunc pathFilterFunc)
+    : _pathFilterFunc(pathFilterFunc) {
 
   struct sockaddr_un listenAddr;
 
@@ -120,41 +135,48 @@ BeegfsFileEventLog::BeegfsFileEventLog(const std::string &socketPath) {
 
 std::pair<BeegfsFileEventLog::ReadErrorCode, BeegfsLogPacket>
 BeegfsFileEventLog::read() {
-
   if (serverFD == -1) {
+    onAccept = true;
     serverFD = accept(listenFD, NULL, NULL);
+    onAccept = false;
 
-    if (serverFD < 0)
-      throw exception("Error accepting connection: " +
-                      std::string(strerror(errno)));
+    if (serverFD < 0) {
+        removeSockets();
+        std::pair<BeegfsFileEventLog::ReadErrorCode, BeegfsLogPacket> dummy;
+        dummy.first = BeegfsFileEventLog::ReadErrorCode::ReadFailed;
+        return dummy;
+    }
   }
-
   const auto recvRes = read_packet(serverFD);
 
   if (ReadErrorCode::Success != recvRes.first) {
-    close(serverFD);
-    serverFD = -1;
+    if (serverFD != -1) {
+        close(serverFD);
+        serverFD = -1;
+    }
   }
 
   return recvRes;
 }
 
 BeegfsFileEventLog::~BeegfsFileEventLog() {
-  close(serverFD);
-  close(listenFD);
+    removeSockets();
 }
 
 std::pair<BeegfsFileEventLog::ReadErrorCode, BeegfsLogPacket>
 BeegfsFileEventLog::read_packet(int fd) {
   BeegfsLogPacket res;
   char data[65536];
+  onReceive = true;
   const ssize_t bytesRead = recv(fd, data, sizeof(data), 0);
+  onReceive = false;
   const ssize_t headerSize = sizeof(BeegfsLogPacket::formatVersionMajor) +
                           sizeof(BeegfsLogPacket::formatVersionMinor) +
                           sizeof(BeegfsLogPacket::size);
 
-  if (bytesRead < headerSize)
-    return {ReadErrorCode::ReadFailed, {}};
+  if (bytesRead < headerSize) {
+    return { ReadErrorCode::ReadFailed, {} };
+  }
 
   Reader reader(&data[0], bytesRead);
 
@@ -172,5 +194,25 @@ BeegfsFileEventLog::read_packet(int fd) {
   reader >> res.droppedSeq >> res.missedSeq >> res.type >> res.entryId >>
       res.parentEntryId >> res.path >> res.targetPath >> res.targetParentId;
 
+  if (_pathFilterFunc && _pathFilterFunc(res.path)) {
+      return {ReadErrorCode::IgnoredPath, {}};
+  }
   return {ReadErrorCode::Success, res};
+}
+
+void BeegfsFileEventLog::removeSockets() {
+    if (serverFD != -1) {
+        if (onReceive) {
+            shutdown(serverFD, SHUT_RDWR);
+        }
+        close(serverFD);
+        serverFD = -1;
+    }
+    if (listenFD != -1) {
+        if (onAccept) {
+            shutdown(listenFD, SHUT_RDWR);
+        }
+        close(listenFD);
+        listenFD=-1;
+    }
 }

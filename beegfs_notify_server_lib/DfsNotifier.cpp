@@ -4,8 +4,12 @@
 #include <iostream>
 #include <thread>
 
-DfsNotifier::DfsNotifier(zmqpp::context &ctx, const std::string &eventsSocket):
-    _lastId(0), _ctx(ctx), _eventsSocket(eventsSocket) {
+int idx = 2;
+
+using namespace std::chrono_literals;
+
+DfsNotifier::DfsNotifier(zmqpp::context &ctx, const std::string &eventsSocket, BeegfsFileEventLog::PathFilterFunc pathFilterFunc):
+    _lastId(0), _ctx(ctx), _eventsSocket(eventsSocket), _running(false), log(eventsSocket, pathFilterFunc) {
 }
 
 std::string DfsNotifier::checkPathWithSubId(const std::string path) {
@@ -33,19 +37,23 @@ std::string DfsNotifier::rmPathWithSubId(const std::string &path) {
 void DfsNotifier::sender() {
     zmqpp::socket eventsSocket(_ctx, zmqpp::socket_type::pub);
     eventsSocket.bind(zmqpp::endpoint_t("tcp://*:" + std::to_string(BeegfsEvents::PUBLISHER_SERVICE_PORT)));
-    while(true) {
+    while(_running) {
         BeegfsLogPacket pkg;
         {
             std::unique_lock lock(_msgMutex);
-            _msgWaiter.wait(lock);
-            if (_packages.empty())
-                continue;
+            while (_packages.empty())
+            {
+                if (!_running) {
+                    return;
+                }
+                _msgWaiter.wait_for(lock,idx*100ms);
+            }
             pkg = std::move(_packages.front());
             _packages.pop();
         }
-        std::lock_guard lock(_pathMutex);
         std::string path = pkg.path;
         std::cerr << "NEW EVENT for path: " << path << std::endl;
+        std::lock_guard lock(_pathMutex);
         size_t pathId = 0;
         for (auto it : _paths) {
             if (path.find(it.first) == 0) {
@@ -65,9 +73,10 @@ void DfsNotifier::sender() {
 }
 
 void DfsNotifier::run() {
-    BeegfsFileEventLog log(_eventsSocket);
+    _running = true;
+
     std::thread senderThread(&DfsNotifier::sender, this);
-    while (true)
+    while (_running)
     {
         auto data = log.read();
         switch (data.first) {
@@ -78,6 +87,7 @@ void DfsNotifier::run() {
             if (_packages.size() > 100) {
                 std::cerr << "Warning: _messages queue size: " << _packages.size() << std::endl;
             }
+            lock.unlock();
             _msgWaiter.notify_all();
         }
             continue;
@@ -90,7 +100,15 @@ void DfsNotifier::run() {
         case BeegfsFileEventLog::ReadErrorCode::ReadFailed:
             std::cerr << "Read Failed" << std::endl;
             continue;
+        case BeegfsFileEventLog::ReadErrorCode::IgnoredPath:
+            continue;
         }
+
     }
     senderThread.join();
+}
+
+void DfsNotifier::stop() {
+    _running = false;
+    log.removeSockets();
 }

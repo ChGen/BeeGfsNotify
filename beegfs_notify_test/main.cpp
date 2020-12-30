@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <csignal>
 #include <zmqpp/zmqpp.hpp>
 #include <netdb.h>
 #include <arpa/inet.h>
@@ -18,26 +19,21 @@
 #include "Common.h"
 #include "DfsNotifier.h"
 
-template<typename ...Args>
-std::string string_format(const std::string& format, Args... args)
+namespace
 {
-    size_t size = snprintf(nullptr, 0, format.c_str(), args...) + 1;
-    if (size <= 0 )
-        throw std::runtime_error( "Incorrect format");
-    std::vector<char> buff(size, 0);
-    snprintf(buff.data(), size, format.c_str(), args...);
-    return std::string(buff.data(), buff.data() + size - 1);
+    std::mutex fsNotifierMutex;
+    std::shared_ptr<DfsNotifier> fsNotifier;
 }
 
 int hostname_to_ip(char *hostname, char *ip) {
     struct hostent *he;
     struct in_addr **addr_list;
     int i;
-    if ((he=gethostbyname(hostname)) == NULL) {
+    if ((he = gethostbyname(hostname)) == NULL) {
         return 1;
     }
     addr_list = (struct in_addr**)he->h_addr_list;
-    for (i=0; addr_list[i] != NULL; i++) {
+    for (i = 0; addr_list[i] != NULL; i++) {
         strcpy(ip, inet_ntoa(*addr_list[i]));
         return 0;
     }
@@ -59,23 +55,26 @@ std::string getPublisherAddress() {
 int main (int argc, char *argv[]) {
 
     if (argc != 2) {
-        std::cerr << "Usage ./beegfs_notify /tmp/meta.beegfslog" << std::endl;
+        std::cerr << "Usage ./beegfs_notify_test /tmp/meta.beegfslog" << std::endl;
         return 1;
     }
 
-    // PUB/SUB - notifications; REQ/REP - (un)registering file path
     std::cout << zmqpp::version() << std::endl;
     std::cout << getHostName() << std::endl;
 
     zmqpp::context ctx;
 
-    DfsNotifier fsNotifier(ctx, argv[1]);
-    std::thread notifierThread(&DfsNotifier::run, &fsNotifier);
+    {
+        std::lock_guard lock(fsNotifierMutex);
+        fsNotifier = std::make_shared<DfsNotifier>(ctx, argv[1]);
+    }
+
+    std::thread notifierThread(&DfsNotifier::run, fsNotifier);
 
     zmqpp::socket respSocket(ctx, zmqpp::socket_type::rep);
     respSocket.bind(zmqpp::endpoint_t("tcp://*:" + std::to_string(BeegfsEvents::NOTIFICATION_SERVICE_PORT)));
 
-    const std::string publisherAddress = getPublisherAddress(); // "tcp://localhost:4321";
+    const std::string publisherAddress = getPublisherAddress();
     while (true) {
         zmqpp::message msg, resp;
         std::string subId;
@@ -95,12 +94,12 @@ int main (int argc, char *argv[]) {
             resp << publisherAddress;
         } else if (type == BeegfsEvents::REGISTER_PATH_COMMAND) { //register dir (with files) or file
             std::cout << "Subscription for " << msg.get(1) << std::endl;
-            subId = fsNotifier.checkPathWithSubId(msg.get(1));
-            resp << subId; //for filtering on client
+            subId = fsNotifier->checkPathWithSubId(msg.get(1));
+            resp << subId;
             resp << publisherAddress;
         } else if (type == BeegfsEvents::UNREGISTER_PATH_COMMAND) {
             std::cout << "Unsubscribe for " << msg.get(1) << std::endl;
-            subId = fsNotifier.rmPathWithSubId(msg.get(1));
+            subId = fsNotifier->rmPathWithSubId(msg.get(1));
             resp << subId;
             resp << publisherAddress;
         }
@@ -110,9 +109,7 @@ int main (int argc, char *argv[]) {
             std::cerr << "respSocket.send() exception: " << ex.what();
         }
     }
-
     notifierThread.join();
-    
     std::cout << "Done." << std::endl;
     return 0;
 }
