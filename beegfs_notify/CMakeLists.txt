@@ -30,21 +30,3 @@ target_link_libraries(beegfs_notify_client
     zmqpp::zmqpp
     czmq::czmq-static
     )
-
-target_include_directories(beegfs_notify_client INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
-
-add_executable(beegfs_client_test
-    client_test.cpp
-    )
-
-#target_compile_options(beegfs_client_test PRIVATE "-fsanitize=address")
-#target_link_options(beegfs_client_test PRIVATE "-fsanitize=address")
-
-target_link_libraries(beegfs_client_test 
-	PRIVATE
-		beegfs_notify_client
-		Threads::Threads
-                zmq
-                czmq::czmq-static
-                zmqpp::zmqpp
-)
