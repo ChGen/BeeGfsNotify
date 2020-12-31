@@ -1,0 +1,11 @@
+[requires]
+hiredis/0.14.1
+gtest/1.10.0
+zeromq/4.3.3
+czmq/4.2.0
+zmqpp/4.2.0
+cryptopp/8.2.0
+
+[generators]
+cmake_find_package
+
