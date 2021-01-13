@@ -23,7 +23,4 @@ target_link_libraries(beegfs_notify_lib PUBLIC
 		zmq
 		zmqpp::zmqpp
 		czmq::czmq-static
-                rootdiff
-		utilclib
-		xfs_compiler_flags
 )

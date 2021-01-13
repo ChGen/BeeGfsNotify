@@ -9,4 +9,4 @@ find_package(czmq REQUIRED)
 find_package(zmqpp REQUIRED)
 
 add_executable(beegfs_notify_test main.cpp)
-target_link_libraries(beegfs_notify_test beegfs_notify_lib utillib)
+target_link_libraries(beegfs_notify_test beegfs_notify_lib)
