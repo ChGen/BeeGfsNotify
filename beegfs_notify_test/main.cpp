@@ -7,6 +7,7 @@
 #include <map>
 #include <set>
 #include <thread>
+#include <mutex>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,7 +16,6 @@
 #include <zmqpp/zmqpp.hpp>
 #include <netdb.h>
 #include <arpa/inet.h>
-#include "BeegfsFileEventLog.h"
 #include "Common.h"
 #include "DfsNotifier.h"
 

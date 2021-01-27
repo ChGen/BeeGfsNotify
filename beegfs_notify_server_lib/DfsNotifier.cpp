@@ -9,7 +9,7 @@ int idx = 2;
 using namespace std::chrono_literals;
 
 DfsNotifier::DfsNotifier(zmqpp::context &ctx, const std::string &eventsSocket, BeegfsFileEventLog::PathFilterFunc pathFilterFunc):
-    _lastId(0), _ctx(ctx), _eventsSocket(eventsSocket), _running(false), log(eventsSocket, pathFilterFunc) {
+    _lastId(0), _ctx(ctx), _running(false), log(eventsSocket, pathFilterFunc) {
 }
 
 std::string DfsNotifier::checkPathWithSubId(const std::string path) {
