@@ -23,7 +23,7 @@ jobs:
       run: cmake -E make_directory ${{github.workspace}}/build
 
 
-      name: Install packages
+    - name: Install packages
       run: |
         sudo pip3 install conan
         which conan
