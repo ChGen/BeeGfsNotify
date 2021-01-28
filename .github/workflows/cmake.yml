@@ -25,7 +25,8 @@ jobs:
 
     - name: Install packages
       run: |
-        sudo pip3 install conan
+        sudo pip3 install -U pip setuptools
+        sudo pip3 install -U conan
         which conan
 
 
