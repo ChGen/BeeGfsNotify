@@ -22,10 +22,12 @@ jobs:
       # We'll use this as our working directory for all subsequent commands
       run: cmake -E make_directory ${{github.workspace}}/build
 
+
       name: Install packages
       run: |
         sudo pip3 install conan
         which conan
+
 
     - name: Configure CMake
       # Use a bash shell so we can use the same syntax for environment variable
@@ -38,7 +40,7 @@ jobs:
       run: |
          conan install $GITHUB_WORKSPACE
          cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-         
+
 
     - name: Build
       working-directory: ${{github.workspace}}/build
