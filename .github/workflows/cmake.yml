@@ -28,6 +28,22 @@ jobs:
         sudo pip3 install -U pip setuptools
         sudo pip3 install -U conan
         which conan
+        conan profile new default --detect
+        conan profile update settings.compiler.libcxx=libstdc++11 default
+
+    - name: Prepare zmqpp package locally
+      run: |
+        pushd $GITHUB_WORKSPACE/conan/zmqpp
+        conan create .
+        popd
+        conan search zmqpp
+
+
+    - name: Configure Conan
+      shell: bash
+      working-directory: ${{github.workspace}}/build
+      run: |
+        conan install $GITHUB_WORKSPACE
 
 
     - name: Configure CMake
@@ -39,7 +55,6 @@ jobs:
       # and build directories, but this is only available with CMake 3.13 and higher.  
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
       run: |
-         conan install $GITHUB_WORKSPACE
          cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
 
