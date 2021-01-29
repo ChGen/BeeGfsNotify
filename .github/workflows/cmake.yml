@@ -43,7 +43,7 @@ jobs:
       shell: bash
       working-directory: ${{github.workspace}}/build
       run: |
-	conan install $GITHUB_WORKSPACE
+        conan install $GITHUB_WORKSPACE
 
 
     - name: Configure CMake
