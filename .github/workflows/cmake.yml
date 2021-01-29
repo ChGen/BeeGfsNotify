@@ -28,6 +28,7 @@ jobs:
         sudo pip3 install -U pip setuptools
         sudo pip3 install -U conan
         which conan
+        conan profile update settings.compiler.libcxx=libstdc++11 default
 
     - name: Prepare zmqpp package locally
       run: |
