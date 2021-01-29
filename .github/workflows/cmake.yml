@@ -29,6 +29,12 @@ jobs:
         sudo pip3 install -U conan
         which conan
 
+    - name: Prepare zmqpp package locally
+      run: |
+        pushd $GITHUB_WORKSPACE/conan/zmqpp
+        conan create .
+        popd
+        conan search zmqpp
 
     - name: Configure CMake
       # Use a bash shell so we can use the same syntax for environment variable
