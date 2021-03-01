@@ -5,10 +5,6 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
-    artifacts:
-        paths:
-        - cppcheck-report.txt
-    expire_in: 1 week
     steps:
     - uses: actions/checkout@v2
 
@@ -19,4 +15,10 @@ jobs:
     - name: Run cppcheck locally
       run: |
         cppcheck --enable=all --std=c++11 --language=c++ --output-file=cppcheck-report.txt .
+    - name: Archive production artifacts
+      uses: actions/upload-artifact@v2
+      with:
+          name: dist-without-markdown
+          path: |
+            cppcheck-report.txt
 
