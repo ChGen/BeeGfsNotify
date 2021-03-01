@@ -10,7 +10,7 @@ jobs:
 
     - name: Install packages
       run: |
-        sudo apt install -y parallel
+        sudo apt install -y parallel cppcheck
 
     - name: Run cppcheck locally
       run: |
