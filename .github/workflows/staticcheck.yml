@@ -1,0 +1,24 @@
+name: cppcheck-test
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install packages
+      run: |
+        sudo apt install -y parallel cppcheck
+
+    - name: Run cppcheck locally
+      run: |
+        cppcheck --enable=all --std=c++11 --language=c++ --output-file=cppcheck-report.txt .
+    - name: Archive production artifacts
+      uses: actions/upload-artifact@v2
+      with:
+          name: cppcheck-report
+          path: |
+            cppcheck-report.txt
+
