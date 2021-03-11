@@ -48,7 +48,7 @@ public:
      * @param path is full DFS path to watch
      * @return - subscriber id, matching given path
      */
-    std::string checkPathWithSubId(const std::string path);
+    std::string checkPathWithSubId(const std::string &path);
 
     /**
      * @brief rmPathWithSubId

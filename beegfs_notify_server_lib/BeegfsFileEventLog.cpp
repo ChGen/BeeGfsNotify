@@ -183,7 +183,7 @@ BeegfsFileEventLog::read_packet(int fd) {
   reader >> res.formatVersionMajor >> res.formatVersionMinor;
 
   if (res.formatVersionMajor != BEEGFS_EVENTLOG_FORMAT_MAJOR ||
-      res.formatVersionMinor < BEEGFS_EVENTLOG_FORMAT_MINOR)
+      res.formatVersionMinor != BEEGFS_EVENTLOG_FORMAT_MINOR) // should be '<' for future versions
     return {ReadErrorCode::VersionMismatch, {}};
 
   reader >> res.size;

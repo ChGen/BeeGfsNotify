@@ -12,7 +12,7 @@ DfsNotifier::DfsNotifier(zmqpp::context &ctx, const std::string &eventsSocket, B
     _lastId(0), _ctx(ctx), _running(false), log(eventsSocket, pathFilterFunc) {
 }
 
-std::string DfsNotifier::checkPathWithSubId(const std::string path) {
+std::string DfsNotifier::checkPathWithSubId(const std::string &path) {
     std::lock_guard lock(_pathMutex);
     auto it = _paths.find(path);
     if (it != _paths.end()) {
