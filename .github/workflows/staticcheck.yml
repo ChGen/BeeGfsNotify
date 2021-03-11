@@ -10,12 +10,13 @@ jobs:
 
     - name: Install packages
       run: |
-        sudo apt install -y parallel cppcheck
+        sudo apt install -y cppcheck
 
     - name: Run cppcheck locally
       run: |
-        cppcheck --enable=all --std=c++11 --language=c++ --output-file=cppcheck-report.txt .
+        cppcheck --enable=all --std=c++14 --language=c++ --suppress=unusedFunction --suppress=toomanyconfigs --suppress=unmatchedSuppression --output-file=cppcheck-report.txt --error-exitcode=13 .
     - name: Archive production artifacts
+      if: ${{ always() }}
       uses: actions/upload-artifact@v2
       with:
           name: cppcheck-report
