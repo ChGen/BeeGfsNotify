@@ -15,5 +15,6 @@ find_package(cryptopp REQUIRED)
 find_package(zmqpp REQUIRED)
 
 add_subdirectory(beegfs_notify_server_lib)
+add_subdirectory(beegfs_notify_client_lib)
 add_subdirectory(beegfs_notify_test)
 
