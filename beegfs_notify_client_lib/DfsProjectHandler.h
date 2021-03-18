@@ -18,7 +18,7 @@ class DfsProjectHandler {
     DfsProjectHandler& operator=(const DfsProjectHandler&) = delete;
 public:
 
-  DfsProjectHandler(zmqpp::context &context);
+  explicit DfsProjectHandler(zmqpp::context &context);
 
   /**
    * @brief init connect to server 

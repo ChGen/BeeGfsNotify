@@ -61,7 +61,7 @@ public:
 
   using PathFilterFunc = std::function<bool (std::string)>;
 
-  BeegfsFileEventLog(const std::string &socketPath, PathFilterFunc pathFilterFunc = {});
+  explicit BeegfsFileEventLog(const std::string &socketPath, PathFilterFunc pathFilterFunc = {});
 
   std::pair<ReadErrorCode, BeegfsLogPacket> read();
   void removeSockets();

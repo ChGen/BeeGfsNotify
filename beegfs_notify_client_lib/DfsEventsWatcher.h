@@ -28,7 +28,7 @@ public:
   using DfsWatchCallback = std::function<void(
       const std::string &watchedDir, const std::string &changedObject, const std::string &operation)>;
 
-  DfsEventsWatcher(zmqpp::context &context);
+  explicit DfsEventsWatcher(zmqpp::context &context);
   ~DfsEventsWatcher();
 
   /**
