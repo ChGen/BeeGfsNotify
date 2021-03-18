@@ -22,8 +22,4 @@ target_link_libraries(beegfs_notify_client_lib PRIVATE
 		Threads::Threads
 		zmq
 		zmqpp::zmqpp
-		czmq::czmq-static
-	PUBLIC
-               utilclib
-		xfs_compiler_flags
 )

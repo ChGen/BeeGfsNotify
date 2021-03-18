@@ -24,5 +24,4 @@ target_link_libraries(beegfs_notify_lib PUBLIC
 		Threads::Threads
 		zmq
 		zmqpp::zmqpp
-		czmq::czmq-static
 )
